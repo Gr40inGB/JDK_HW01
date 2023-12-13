@@ -2,43 +2,93 @@ package org.gr40in;
 
 import java.io.*;
 import java.net.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ConnectionServer implements ConnectionListener {
     public static void main(String[] args) {
-        try (ServerSocket serverSocket = new ServerSocket(5555);
-             Socket socket = serverSocket.accept();
-             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-             BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()))) {
-            System.out.println("connect ok");
+        try {
+            new ConnectionServer();
+        } catch (IOException e) {
+            System.out.println("server failed");
+        }
+    }
 
+    public List<ChatConnection> connectionList = new ArrayList<>();
+    private static Path logPath = Path.of("log.txt");
+    public static BufferedWriter logWriter;
+    public static BufferedReader logReader;
 
-            String inputLine;
+    static {
+        try {
+            logWriter = Files.newBufferedWriter(logPath);
+            logReader = Files.newBufferedReader(logPath);
+        } catch (IOException e) {
+            System.out.println("logging failed");
+        }
+    }
+
+    public ConnectionServer() throws IOException {
+        try (ServerSocket serverSocket = new ServerSocket(5555)) {
             while (true) {
-                while ((inputLine = bufferedReader.readLine()) != null) {
-                    if (".".equals(inputLine)) {
-                        System.out.println("byby");
-                        break;
-                    }
-                    System.out.println(inputLine);
-                }
+                ChatConnection newChat = new ChatConnection(serverSocket.accept(), this);
+                connectionList.add(newChat);
+                newChat.sendMessage(getLog());
+                System.out.println("connect ok");
+            }
+        } catch (IOException e) {
+            logWriter.close();
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public synchronized void connectionOk(ChatConnection connection) {
+
+    }
+
+    @Override
+    public synchronized void getMessage(String message) {
+        sendMessage(message);
+    }
+
+    @Override
+    public synchronized void sendMessage(String message) {
+        if (!message.isEmpty()) writeToLog(message + "\n");
+        try {
+            for (ChatConnection chat : connectionList) {
+                chat.sendMessage(message);
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    @Override
-    public void connectionOk(ChatConnection connection) {
+    public synchronized void writeToLog(String data) {
+        try {
+            logWriter.append(data);
+            logWriter.flush();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
+    public synchronized String getLog() {
+        StringBuilder builder = new StringBuilder();
+        try {
+            logReader = Files.newBufferedReader(logPath);
+            String line = "";
+            while ((line = logReader.readLine()) != null) builder.append(line).append("\n");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return builder.toString();
     }
 
     @Override
-    public void getMessage(String message) {
-
-    }
-
-    @Override
-    public void sendMessage(String message) {
-
+    public synchronized void disconnect(ChatConnection connection) {
+        connectionList.remove(connection);
     }
 }
