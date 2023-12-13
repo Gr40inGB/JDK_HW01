@@ -5,16 +5,14 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.*;
-import java.net.Socket;
-import java.util.Scanner;
 
-public class ConnectionClient extends JFrame implements ConnectionListener {
+public class ChatClient extends JFrame implements ConnectionListener {
 
     public static void main(String[] args) throws Exception {
         SwingUtilities.invokeLater(new Runnable() {
             @Override
             public void run() {
-                new ConnectionClient();
+                new ChatClient();
             }
         });
     }
@@ -22,8 +20,8 @@ public class ConnectionClient extends JFrame implements ConnectionListener {
     private User user;
     private String server = "localhost";
     private int port = 5555;
-    private final int HEIGHT = 400;
 
+    private final int HEIGHT = 400;
     private final int WIDTH = 500;
     private final JTextArea log = new JTextArea();
     private final JPanel panelTop = new JPanel(new GridLayout(3, 2));
@@ -38,7 +36,7 @@ public class ConnectionClient extends JFrame implements ConnectionListener {
 
     private ChatConnection connection;
 
-    public ConnectionClient() throws HeadlessException {
+    public ChatClient() throws HeadlessException {
 
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
@@ -53,9 +51,9 @@ public class ConnectionClient extends JFrame implements ConnectionListener {
             @Override
             public void actionPerformed(ActionEvent e) {
                 try {
-                    ConnectionClient.this.connection = new ChatConnection(tfIPAddress.getText(),
+                    ChatClient.this.connection = new ChatConnection(tfIPAddress.getText(),
                             Integer.parseInt(tfPort.getText()),
-                            ConnectionClient.this);
+                            ChatClient.this);
                     log.append("Connection ok\n");
                 } catch (IOException ex) {
                     throw new RuntimeException(ex);
@@ -78,8 +76,8 @@ public class ConnectionClient extends JFrame implements ConnectionListener {
                 }
             }
         });
-        add(panelBottom, BorderLayout.SOUTH);
 
+        add(panelBottom, BorderLayout.SOUTH);
         log.setEditable(false);
         JScrollPane scrollLog = new JScrollPane(log);
         add(scrollLog);
